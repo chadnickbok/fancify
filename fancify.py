@@ -30,8 +30,8 @@ def hello_world():
 @app.route('/fancify', methods=['GET', 'POST'])
 def fancify():
     if request.method == 'POST':
-        cur_request = {}
-        cur_request["url"] = str(request.form['url'])
+        print request.data
+        cur_request = json.loads(request.data)
     else:
         cur_request = """{"url": "http://www.viewzone.com/attractive.female.jpg"}"""
         cur_request = json.loads(cur_request)
