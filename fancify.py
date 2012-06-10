@@ -52,7 +52,7 @@ def fancify():
     img = Image(str(cur_request["url"]))
     img = img.scale(2.0)
 
-    #debug = True
+    debug = False
     if "debug" in cur_request:
         debug = cur_request["debug"]
 
