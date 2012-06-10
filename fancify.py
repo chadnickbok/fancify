@@ -43,10 +43,11 @@ def fancify():
         cur_request = json.loads(request.data)
     else:
         #cur_request = """{"url": "", "debug":true}"""
-        cur_request = """{"url": "http://collider.com/uploads/imageGallery/Scrubs/scrubs_cast_image__medium_.jpg", "debug":false}"""
+        #cur_request = """{"url": "http://face2face.si.edu/.a/6a00e550199efb8833010536a5483e970c-800wi", "debug":true}"""
+        #cur_request = """{"url": "http://collider.com/uploads/imageGallery/Scrubs/scrubs_cast_image__medium_.jpg", "debug":false}"""
         #cur_request = """{"url": "http://localhost/Kevin_Bacon_at_the_2010_SAG_Awards.jpg", "debug":false}"""
         #cur_request = """{"url": "http://cdn02.cdn.justjared.com/wp-content/uploads/headlines/2012/02/anna-faris-oscars-red-carpet-2012.jpg", "debug":true}"""
-        #cur_request = """{"url": "http://www.viewzone.com/attractive.female.jpg", "debug":true}"""
+        cur_request = """{"url": "http://www.viewzone.com/attractive.female.jpg", "debug":true}"""
         cur_request = json.loads(cur_request)
 
     print cur_request["url"]
@@ -74,6 +75,7 @@ def fancify():
             mouth = None
             left_eye = None
             right_eye = None
+            #cur_face = img.crop(face.x, face.y, face.width(), face.height() * 8 / 7, centered=True)
             cur_face = face.crop()
 
             noses = cur_face.findHaarFeatures(nose_cascade)
@@ -85,9 +87,11 @@ def fancify():
 
             if noses is not None:
                 nose = noses[0]
-                nose_dist = abs(face_left_edge + nose.x - face.x) + abs(face_top_edge + nose.y - face.y)
+                nose_dist = (abs(nose.x - (face.width() / 2)) + abs(nose.y - (face.height() / 2)) +
+                            abs(nose.width() - (face.width() / 4)))
                 for cur_nose in noses:
-                    cur_dist = abs(face_left_edge + cur_nose.x - face.x) + abs(face_top_edge + cur_nose.y - face.y)
+                    cur_dist = (abs(cur_nose.x - (face.width() / 2)) + abs(cur_nose.y - (face.height() / 2)) +
+                                abs(cur_nose.width() - (face.width() / 4)))
                     if cur_dist < nose_dist:
                         nose = cur_nose
                         nost_dist = cur_dist
@@ -98,26 +102,27 @@ def fancify():
 
                 for cur_mouth in mouths:
                     cur_dist = abs(cur_mouth.x - nose.x) + (abs(cur_mouth.y - (face.height() * 4/ 5)) * 2)
-                    if cur_dist < mouth_dist:
+                    if (cur_dist < mouth_dist) and (cur_mouth.y > nose.y):
                         mouth = cur_mouth
                         mouth_dist = cur_dist
 
             if nose and eyes is not None:
                 right_eye = eyes[0]
-                left_eye = eyes[0]
-                right_eye_dist = abs(right_eye.x - (3 * face.width() / 4)) + abs(right_eye.y - (nose.y + (face.height() / 4) / 2))
-                left_eye_dist = abs(face_left_edge + left_eye.x - (face.x - (face.width() / 4))) + abs(face_top_edge + left_eye.y - (face.y - (face.height() / 5))) / 2
+                right_eye_dist = (abs(right_eye.x - (3 * face.width() / 4)) +
+                                  abs(right_eye.y - (nose.y - (nose.height() / 2)) / 2) +
+                                  abs(right_eye.width() - (face.width() / 3)))
                 for cur_eye in eyes:
-                    cur_right_dist = abs(cur_eye.x - (3 * face.width() / 4)) + abs(cur_eye.y - (nose.y + (face.height() / 4) / 2))
-                    cur_left_dist = abs(face_left_edge + cur_eye.x - (face.x - (face.width() / 4))) + abs(face_top_edge + cur_eye.y - (face.y - (face.height() / 5))) / 2
+                    cur_right_dist = (abs(cur_eye.x - (3 * face.width() / 4)) +
+                                      abs(cur_eye.y - (nose.y - (nose.height() / 2)) / 2) +
+                                      abs(cur_eye.width() - (face.width() / 3)))
 
-                    if (cur_right_dist < right_eye_dist) and (cur_eye.x > (nose.x)):
+                    if (cur_right_dist <= right_eye_dist) and (cur_eye.y < nose.y):
                         right_eye = cur_eye
                         right_eye_dist = cur_right_dist
 
-                    if (cur_left_dist < left_eye_dist) and (cur_eye.x < (face.width() / 2)):
-                        left_eye = cur_eye
-                        left_eye_dist = cur_left_dist
+            if nose and right_eye and (right_eye.y > nose.y):
+                right_eye = None
+
 
             if right_eye and (right_eye.x < (face.width() / 2)):
                 right_eye = None
@@ -157,8 +162,10 @@ def fancify():
                 stache_mask = cur_stache.createAlphaMask(hue_lb=0, hue_ub=10).invert()
 
                 #calculate the mustache position
-                bottom_of_nose = y_nose + (nose.height() * 3 / 4)
+                bottom_of_nose = y_nose + (nose.height() * 4 / 5)
                 top_of_mouth = y_mouth
+                #if top_of_mouth > bottom_of_nose:
+                #    top_of_mouth = bottom_of_nose
                 y_must = y_face + ((bottom_of_nose + top_of_mouth) / 2) - (cur_stache.height / 2)
 
                 middle_of_nose = nose.x
