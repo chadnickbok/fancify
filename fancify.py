@@ -16,13 +16,20 @@ from SimpleCV import Color, ColorCurve, Camera, Image, pg, np, HaarCascade
 from SimpleCV.Display import Display
 from SimpleCV import DrawingLayer
 
+import rsvg
+import cairo
+import array
+
 app = Flask(__name__)
 app.debug = True
 
 face_cascade = HaarCascade("/var/lib/SimpleCV/Features/HaarCascades/face.xml")
 nose_cascade = HaarCascade("/var/lib/SimpleCV/Features/HaarCascades/nose.xml")
 mouth_cascade = HaarCascade("/var/lib/SimpleCV/Features/HaarCascades/mouth.xml")
-stache = Image("./stache.png")
+eye_cascade = HaarCascade("/var/lib/SimpleCV/Features/HaarCascades/eye.xml")
+
+stache = Image("./new_stache.png")
+monocle = Image("./monocle.png")
 
 @app.route('/')
 def hello_world():
@@ -47,6 +54,7 @@ def fancify():
             cur_face = face.crop()
             noses = cur_face.findHaarFeatures(nose_cascade)
             mouths = cur_face.findHaarFeatures(mouth_cascade)
+            eyes = cur_face.findHaarFeatures(eye_cascade)
             print "X:", face.x
             print "Y:", face.y
             face_left_edge = face.x - (face.width() / 2)
@@ -70,6 +78,15 @@ def fancify():
                         mouth = cur_mouth
                         mouth_dist = cur_dist
 
+            if eyes is not None:
+                eye = eyes[0]
+                eye_dist = abs(face_left_edge + eye.x - (face.x + (face.width() / 4))) + abs(face_top_edge + eye.y - (face.y - (face.height() / 4)))
+                for cur_eye in eyes:
+                    cur_dist = abs(face_left_edge + cur_eye.x - (face.x + (face.width() / 4))) + abs(face_top_edge + cur_eye.y - (face.y - (face.height() / 4)))
+                    if cur_dist < eye_dist:
+                        eye = cur_eye
+                        eye_dist = cur_dist
+
             if nose and mouth:
 
                 x_face = face.x - (face.width() / 2)
@@ -81,15 +98,27 @@ def fancify():
                 x_mouth = mouth.x - (mouth.width() / 2)
                 y_mouth = mouth.y - (mouth.height() / 2)
 
+                x_eye = eye.x - (eye.width() / 2)
+                y_eye = eye.y - (eye.height() / 2)
+
                 #blit the stache/mask onto the image
                 cur_stache = stache.copy()
-                scale_factor = nose.width() / 35.0
+                scale_factor = nose.width() / 300.0
                 cur_stache = cur_stache.scale(scale_factor)
-                mask = cur_stache.createAlphaMask(hue_lb=60, hue_ub=130).invert()
+                stache_mask = cur_stache.createAlphaMask(hue_lb=0, hue_ub=10).invert()
 
                 #calculate the mustache position
                 x_must = x_face + x_mouth + (mouth.width() / 2) - (cur_stache.width / 2)
                 y_must = y_face + y_mouth - (cur_stache.height / 2)
+
+                # Scale the monocle
+                cur_mono = monocle.copy()
+                scale_factor = eye.width() / 65.0
+                cur_mono = cur_mono.scale(scale_factor)
+                mono_mask = cur_mono.createAlphaMask(hue_lb=0, hue_ub=100).invert()
+
+                x_mono = x_face + x_eye + (eye.width() / 2) - (cur_mono.width / 3)
+                y_mono = y_face + y_eye + (eye.height() / 2) - (cur_mono.width / 2)
 
                 facelayer = DrawingLayer((img.width, img.height))
                 facebox_dimensions = (face.width(), face.height())
@@ -112,7 +141,8 @@ def fancify():
                 #img.addDrawingLayer(mouthlayer)
 
                 #img = img.applyLayers()
-                img = img.blit(cur_stache, pos=(x_must, y_must), alphaMask=mask)
+                img = img.blit(cur_stache, pos=(x_must, y_must), alphaMask=stache_mask)
+                img = img.blit(cur_mono, pos=(x_mono, y_mono), alphaMask=mono_mask)
 
     output = StringIO.StringIO()
     img.getPIL().save(output, format="JPEG")
