@@ -257,7 +257,7 @@ def fancify():
     w_ratio = img.width / 800.0
     h_ratio = img.height / 600.0
 
-    if h_ratio > 1.0 and w_ratio > 1.0:
+    if h_ratio > 1.0 or w_ratio > 1.0:
         if h_ratio > w_ratio:
             img = img.resize(h=600)
         else:
