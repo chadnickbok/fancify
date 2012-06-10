@@ -29,7 +29,8 @@ eye_cascade = HaarCascade("/var/lib/SimpleCV/Features/HaarCascades/eye.xml")
 
 stache = Image("./new_stache.png")
 monocle = Image("./monocle.png")
-hat = Image("./top_hat.png")
+hat = Image("./top_hat_2.png")
+hat_mask = Image("./top_hat_2_mask.png")
 
 @app.route('/')
 def hello_world():
@@ -136,16 +137,18 @@ def fancify():
                 y_right_eye = right_eye.y - (right_eye.height() / 2)
 
                 # Setup TopHat Image
+                scale_factor = face.width() / 175.0
                 cur_hat = hat.copy()
-                scale_factor = face.width() / 350.0
                 cur_hat = cur_hat.scale(scale_factor)
-                hat_mask = cur_hat.createAlphaMask(hue_lb=0, hue_ub=3).invert()
+                cur_hat_mask = hat_mask.copy()
+                cur_hat_mask = cur_hat_mask.scale(scale_factor)
+                cur_hat_mask = cur_hat_mask.createAlphaMask(hue_lb=0, hue_ub=100)
 
                 # Calculate the hat position
                 if (face.y - face.height() / 2) > cur_hat.height:
                     x_hat = face.x - (cur_hat.width / 2)
-                    y_hat = face.y - (face.height() * 4 / 5) - (cur_hat.height / 2)
-                    img = img.blit(cur_hat, pos=(x_hat, y_hat), alphaMask=hat_mask)
+                    y_hat = face.y - (face.height() * 7 / 10) - (cur_hat.height / 2)
+                    img = img.blit(cur_hat, pos=(x_hat, y_hat), alphaMask=cur_hat_mask)
 
                 # Setup Mustache Image
                 cur_stache = stache.copy()
